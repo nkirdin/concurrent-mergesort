@@ -11,7 +11,7 @@ v. 0.2.2
   
 Параметры выполнения:  
   
- `java -jar mergesort.jar  [-V] [-c <number_of_concurrently_merged_chunks> ] [-h] -i <input file> [-m <RAM_per_one_sorter_thread_MBytes>] -o <output_file> [-p <number_of_splitter_threads>] [-r <number_of_merger_threads>]  [-s <number_of_sorter_threads>] [-t <directory_for_temporary_files>] [-v] [-x <maximum_number_of_concurrently_working_threads>]` 
+ `java -jar mergesort.jar  [-V] [-c <number_of_concurrently_merged_chunks> ] [-h] -i <input file> [-m <RAM_per_one_sorter_thread_MBytes>] -o <output_file> [-p <number_of_splitter_threads>] [-r <number_of_merger_threads>]  [-t <directory_for_temporary_files>] [-v] [-x <maximum_number_of_concurrently_working_threads>]` 
 
 * Параметры командной строки: 
 * -V - вывод подробной дополнительная информации о работе программы;
@@ -22,7 +22,6 @@ v. 0.2.2
 * -o - отсортированный файл; 
 * -p - максимальное число одновременно работающих сплиттеров (5); 
 * -r - максимальное количество одновременно работающих мержеров (1); 
-* -s - максимальное количество одновременно работающих сортировщиков (5); 
 * -t - директорий для размещения временных файлов (желательно с большими IO/s), по умолчанию используется  директорий получаемый из системной проперти "java.io.tmpdir". Во время работы в этом директории размещаюся файлы с вида `mrgsrt_s_<number>_<suffix>` на этапе разделения и упорядочения частей исходного файла и `mrgsrt_m_<number>_ <suffix>` на этапах слияния, где `<number>` - это порядковый номер операции, `<suffix>` - это системногенерируемый суффикс для временных файлов; 
 * -v - вывод версии программы;
 * -x - максимальное количество одновременно исполняемых тредов (5).
