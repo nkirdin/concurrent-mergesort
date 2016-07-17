@@ -32,7 +32,7 @@ public class Merger implements Runnable {
 
     private static final AtomicInteger numberOfMergingChunks = new AtomicInteger(
             0);
-
+    
     /*
      * Set with threads for controlling state and health of threads.
      */
@@ -139,7 +139,7 @@ public class Merger implements Runnable {
 
             File chunkOfFile = null;
 
-            synchronized (this) {
+            synchronized(this) {
                 if (!Utils.allChunksSorted.get()
                         && (Utils.numberOfChunksForMerging.get()
                                 - numberOfMergingChunks
@@ -163,6 +163,11 @@ public class Merger implements Runnable {
                             break;
                     }
                 }
+                
+                synchronized (mergerMonitor) {
+                    mergerMonitor.notifyAll();
+                }
+                
             }
 
             if (mergingChunks.size() > 1) {

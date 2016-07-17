@@ -6,10 +6,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -19,12 +17,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 
  * @author Nikolay Kirdin 2016-07-16
  * @version 0.2.2
  */
 public class Sorter implements Runnable {
 
-    public static final int SUPPOSED_AVERAGE_STRING_LENGTH_IN_BYTES = 120;
+    public static final int SUPPOSED_AVERAGE_STRING_LENGTH_IN_BYTES = 10;
 
     /*
      * Number of sorted chunks.
@@ -55,26 +54,34 @@ public class Sorter implements Runnable {
     }
 
     public void sort(File chunkOfFile) throws IOException {
-
-        List<String> stringList = new ArrayList<>((int) chunkOfFile.length()
-                / SUPPOSED_AVERAGE_STRING_LENGTH_IN_BYTES);
-
+        Runtime rt = Runtime.getRuntime();
+        String[] strings = new String[(int) chunkOfFile.length()
+                / SUPPOSED_AVERAGE_STRING_LENGTH_IN_BYTES];
+        int numberOfStrings = 0;
         try (BufferedReader br = new BufferedReader(
                 new FileReader(chunkOfFile))) {
 
-            String inputLine;
-            while ((inputLine = br.readLine()) != null) {
-                stringList.add(inputLine);
+            String string;
+            while ((string = br.readLine()) != null) {
+                strings[numberOfStrings++] = string;
             }
+            
         }
 
-        Collections.sort(stringList);
+        Arrays.sort(strings, 0, numberOfStrings, null);
 
+        if (Utils.isVerbose()) {
+            long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+            System.out.println("mergesort: " + new Date()
+                    + " : Sorter used Memory after sort (MB): " + usedMB);
+        }
+        
         try (BufferedWriter bw = new BufferedWriter(
                 new FileWriter(chunkOfFile))) {
-            for (String outputString : stringList) {
-                bw.write(outputString);
+            for (int i = 0; i < numberOfStrings; i++) {
+                bw.write(strings[i]);
                 bw.newLine();
+                strings[i] = null;
             }
         }
     }

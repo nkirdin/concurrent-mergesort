@@ -33,6 +33,7 @@ public class IntegrationTest {
         Utils.setVerbose(true);
         long startTime = System.currentTimeMillis();
         Utils.setChunkFileLength(50 * 1024 * 1024);
+        Utils.setMaxNumberOfConcurrentThreads(10);
 //        String testPath = ClassLoader
 //                .getSystemResource("IntegrationTest_500M.txt").getPath();
 
@@ -63,7 +64,7 @@ public class IntegrationTest {
         // mergerSortThreadFactory);
         // executorService.allowCoreThreadTimeOut(true);
 
-        int maxSplitterThreads = 5;
+        int maxSplitterThreads = 10;
         int maxSorterThreads = 5;
         int maxMergerThreads = 5;
         Utils.setMaxNumOfMergingChunks(12);
