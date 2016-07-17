@@ -33,28 +33,30 @@ import java.util.concurrent.PriorityBlockingQueue;
  * java -jar mergesort.jar [-V] [-c <number_of_concurrently_merged_chunks> ]
  * [-h] -i <input file> [-m <RAM_per_one_sorter_thread_MBytes>] -o
  * <output_file> [-p <number_of_splitter_threads>] [-r
- * <number_of_merger_threads>] [-s <number_of_sorter_threads>] [-t <directory
- * for temporary files>] [-v] [-x
+ * <number_of_merger_threads>] [-t <directory for temporary files>] [-v] [-x
  * <maximum_number_of_concurrently_working_threads>]
  * 
- * Параметры командной строки: 
- * -V - вывод дополнительная информации о работе программы;
- * -c - максимальное количество одновременно объединяемых файлов одним мержером (20); 
- * -h - вывод краткой справки и информации об основных рабочих параметрах; 
- * -i - исходный файл; 
- * -m - примерный объем доступной оперативной памяти в мегабайтах на один сортировщик (50);
- * -o - отсортированный файл; 
- * -p - максимальное число одновременно работающих сплиттеров (5); 
- * -r - максимальное количество одновременно работающих мержеров (1); 
- * -s - максимальное количество одновременно работающих сортировщиков (5); 
- * -t - директорий для размещения временных файлов (желательно с большими IO/s), по умолчанию используется  директорий получаемый из системной проперти "java.io.tmpdir". Во время работы в этом директории размещаюся файлы с вида `mrgsrt_s_<number>_<suffix>` на этапе разделения и упорядочения частей исходного файла и `mrgsrt_m_<number>_ <suffix>` на этапах слияния, где `<number>` - это порядковый номер операции, `<suffix>` - это системногенерируемый суффикс для временных файлов; 
- * -v - вывод версии программы;
- * -x - максимальное количество одновременно исполняемых тредов (5).
+ * Параметры командной строки: -V - вывод дополнительная информации о работе
+ * программы; -c - максимальное количество одновременно объединяемых файлов
+ * одним мержером (20); -h - вывод краткой справки и информации об основных
+ * рабочих параметрах; -i - исходный файл; -m - примерный объем доступной
+ * оперативной памяти в мегабайтах на один сортировщик (50); -o -
+ * отсортированный файл; -p - максимальное число одновременно работающих
+ * сплиттеров (5); -r - максимальное количество одновременно работающих мержеров
+ * (1); -t - директорий для размещения временных файлов (желательно с большими
+ * IO/s), по умолчанию используется директорий получаемый из системной проперти
+ * "java.io.tmpdir". Во время работы в этом директории размещаюся файлы с вида
+ * `mrgsrt_s_<number>_<suffix>` на этапе разделения и упорядочения частей
+ * исходного файла и `mrgsrt_m_<number>_ <suffix>` на этапах слияния, где `
+ * <number>` - это порядковый номер операции, `<suffix>` - это
+ * системногенерируемый суффикс для временных файлов; -v - вывод версии
+ * программы; -x - максимальное количество одновременно исполняемых тредов (5).
  *
- * В скобках указаны значения по умолчанию.  Ключи должны отделяться друг от друга и от параметров пробелами.
+ * В скобках указаны значения по умолчанию. Ключи должны отделяться друг от
+ * друга и от параметров пробелами.
  * 
- * @author Nikolay Kirdin 2016-07-16
- * @version 0.2.2
+ * @author Nikolay Kirdin 2016-07-17
+ * @version 0.3
  */
 
 public class MergeSort {
@@ -76,14 +78,8 @@ public class MergeSort {
         /*
          * Number of concurrent readers of source file
          */
-        int maxSplitterThreads = Utils.getMaxSorterThreads();
+        int maxSplitterThreads = Utils.getMaxSplitterThreads();
         String maxSplitterThreadsString = Integer.toString(maxSplitterThreads);
-
-        /*
-         * Number of concurrent sorters
-         */
-        int maxSorterThreads = Utils.getMaxSorterThreads();
-        String maxSorterThreadsString = Integer.toString(maxSorterThreads);
 
         /*
          * Number of concurrent mergers
@@ -94,8 +90,10 @@ public class MergeSort {
         /*
          * Maximum number of concurrently working threads
          */
-        int maxNumberOfConcurrentThreads = Utils.getMaxNumberOfConcurrentThreads();
-        String maxNumberOfConcurrentThreadsString = Integer.toString(maxNumberOfConcurrentThreads);
+        int maxNumberOfConcurrentThreads = Utils
+                .getMaxNumberOfConcurrentThreads();
+        String maxNumberOfConcurrentThreadsString = Integer
+                .toString(maxNumberOfConcurrentThreads);
         /*
          * Available memory
          */
@@ -129,7 +127,7 @@ public class MergeSort {
                 break;
             case "-h":
                 System.out.println(
-                        "java -jar mergesort.jar  [-V] [-c <number_of_concurrently_merged_chunks> ] [-h] -i <input file> [-m <RAM_per_one_sorter_thread_MBytes>] -o <output_file> [-p <number_of_splitter_threads>] [-r <number_of_merger_threads>]  [-s <number_of_sorter_threads>] [-t <directory for temporary files>] [-v] [-x <maximum_number_of_concurrently_working_threads>]");
+                        "java -jar mergesort.jar  [-V] [-h] -i <input file> [-m <RAM_per_one_sorter_thread_MBytes>] -o <output_file> [-p <number_of_splitter_threads>] [-r <number_of_merger_threads>]  [-s <number_of_sorter_threads>] [-t <directory for temporary files>] [-v] [-x <maximum_number_of_concurrently_working_threads>]");
                 break;
             case "-i": // c; d; v
                 sourceString = args[k++];
@@ -166,14 +164,6 @@ public class MergeSort {
                     resultOfCommadLineParsing |= 0x200;
                 }
                 break;
-            case "-s":
-                try {
-                    maxSorterThreadsString = args[k++];
-                    maxSorterThreads = Integer.parseInt(maxSorterThreadsString);
-                } catch (NumberFormatException nfe) {
-                    resultOfCommadLineParsing |= 0x400;
-                }
-                break;
             case "-t":
                 tmpDirString = args[k++];
                 tmpDirFile = new File(tmpDirString);
@@ -185,11 +175,12 @@ public class MergeSort {
             case "-v":
                 System.out.println("mergesort version: " + Utils.VERSION);
                 break;
-                //maxNumberOfConcurrentThreadsString
+            // maxNumberOfConcurrentThreadsString
             case "-x":
                 try {
                     maxNumberOfConcurrentThreadsString = args[k++];
-                    maxNumberOfConcurrentThreads = Integer.parseInt(maxNumberOfConcurrentThreadsString);
+                    maxNumberOfConcurrentThreads = Integer
+                            .parseInt(maxNumberOfConcurrentThreadsString);
                 } catch (NumberFormatException nfe) {
                     resultOfCommadLineParsing |= 0x1000;
                 }
@@ -236,28 +227,21 @@ public class MergeSort {
             resultOfCommadLineParsing |= 0x200;
         }
 
-        if (maxSorterThreads < 1
-                || ((resultOfCommadLineParsing & 0x400) != 0)) {
-            System.out.println(
-                    "ERROR: Illegal format for <number_of_sorter_threads>. Should be positive integer: "
-                            + maxSorterThreadsString);
-            resultOfCommadLineParsing |= 0x400;
-        }
-
         if ((resultOfCommadLineParsing & 0x800) != 0) {
             System.out.println(
                     "ERROR: Directory for temporary files doesn't exist: "
                             + tmpDirString);
         }
 
-        if ((ramValue * maxSplitterThreads < 1) || (ramValue * maxSplitterThreads > maxMemory)
+        if ((ramValue * maxSplitterThreads < 1)
+                || (ramValue * maxSplitterThreads > maxMemory)
                 || ((resultOfCommadLineParsing & 0x40) != 0)) {
             System.out.println(
                     "ERROR: Illegal format for <RAM_per_one_sorter_thread_MBytes>. Should be positive integer: "
                             + ramValueString);
             resultOfCommadLineParsing |= 0x40;
         }
-        
+
         if (maxNumberOfConcurrentThreads < 1
                 || ((resultOfCommadLineParsing & 0x1000) != 0)) {
             System.out.println(
@@ -265,7 +249,6 @@ public class MergeSort {
                             + maxNumberOfConcurrentThreadsString);
             resultOfCommadLineParsing |= 0x1000;
         }
-
 
         /***************************** Diagnostics ***************************/
 
@@ -294,25 +277,20 @@ public class MergeSort {
                     + maxMergerThreadsString
                     + ((resultOfCommadLineParsing & 0x200) == 0 ? " correct"
                             : " incorrect"));
-            System.out.println("Number of concurrent sorters of chunks: "
-                    + maxSorterThreadsString
-                    + ((resultOfCommadLineParsing & 0x400) == 0 ? " correct"
-                            : " incorrect"));
             System.out.println("Directory for temporary files: " + tmpDirString
                     + ((resultOfCommadLineParsing & 0x800) == 0 ? " correct"
                             : " incorrect"));
-            System.out.println("Number of concurrent threads: " + maxNumberOfConcurrentThreadsString
+            System.out.println("Number of concurrent threads: "
+                    + maxNumberOfConcurrentThreadsString
                     + ((resultOfCommadLineParsing & 0x1000) == 0 ? " correct"
                             : " incorrect"));
 
-
             System.out.println("Requested memory (MB): "
-                    + maxSorterThreads * ramValue / 1024 / 1024);
+                    + maxSplitterThreads * ramValue / 1024 / 1024);
             System.out
                     .println("Availabel RAM (MB): " + maxMemory / 1024 / 1024);
             if (resultOfCommadLineParsing != 0) {
-                System.out
-                .println("Exit by wrong command line parameters.");
+                System.out.println("Exit by wrong command line parameters.");
             }
         }
 
@@ -329,19 +307,17 @@ public class MergeSort {
                                             // -o
         Utils.setMaxSplitterThreads(maxSplitterThreads); // -p
         Utils.setMaxMergerThreads(maxMergerThreads); // -r
-        Utils.setMaxSorterThreads(maxSorterThreads); // -s
 
         Utils.setTmpDirFile(tmpDirFile); // -t
-        Utils.setMaxNumberOfConcurrentThreads(maxNumberOfConcurrentThreads); //-x
-
+        Utils.setMaxNumberOfConcurrentThreads(maxNumberOfConcurrentThreads); // -x
 
         if (Utils.isVerbose())
             System.out.println(
                     "mergesort: " + new Date() + " : Start splitting points");
 
-        Splitter splitter = new Splitter();
+        SplitterSorter splitterSorter = new SplitterSorter();
 
-        int numberOfSplittingIntervals = Splitter.makePointsForSplitting(
+        int numberOfSplittingIntervals = SplitterSorter.makePointsForSplitting(
                 sourceFile, Utils.getMaxChunkFileLength(),
                 Utils.getPointsForSplittingQueue());
         Utils.numberOfSplittingIntervals.set(numberOfSplittingIntervals);
@@ -355,22 +331,14 @@ public class MergeSort {
                             + Utils.getPointsForSplittingQueue());
 
         MergerSortThreadFactory mergerSortThreadFactory = new MergerSortThreadFactory();
-        ExecutorService executorService = Executors.newFixedThreadPool(maxNumberOfConcurrentThreads,
-                mergerSortThreadFactory);
+        ExecutorService executorService = Executors.newFixedThreadPool(
+                maxNumberOfConcurrentThreads, mergerSortThreadFactory);
 
         if (Utils.isVerbose())
-            System.out.println(
-                    "mergesort: " + new Date() + " : Start splitting file");
+            System.out.println("mergesort: " + new Date()
+                    + " : Start splitting and sorting file");
         for (int i = 0; i < maxSplitterThreads; i++) {
-            executorService.execute(splitter);
-        }
-
-        if (Utils.isVerbose())
-            System.out.println(
-                    "mergesort: " + new Date() + " : Start sorting file");
-        Sorter sorter = new Sorter();
-        for (int i = 0; i < maxSorterThreads; i++) {
-            executorService.execute(sorter);
+            executorService.execute(splitterSorter);
         }
 
         if (Utils.isVerbose())
@@ -382,15 +350,9 @@ public class MergeSort {
         }
 
         try {
-            Utils.checkSemaphoreAndHelth(splitter.getFileSplittedSemaphore(),
-                    splitter.getThreadSet(), "Splitting");
-
-            if (Utils.isVerbose())
-                System.out.println("mergesort: " + new Date()
-                        + " : Ack end of splitting file");
-
-            Utils.checkSemaphoreAndHelth(sorter.getAllChanksSortedSemaphore(),
-                    sorter.getThreadSet(), "Sorting");
+            Utils.checkSemaphoreAndHelth(
+                    splitterSorter.getAllChanksSortedSemaphore(),
+                    splitterSorter.getThreadSet(), "Sorting");
 
             if (Utils.isVerbose())
                 System.out.println("mergesort: " + new Date()
@@ -405,12 +367,26 @@ public class MergeSort {
 
         } catch (InternalInconsistencyException e) {
             e.printStackTrace();
-            System.out.println("ERROR: mergesort. Inconsistency error.");
+            System.out.println("mergesort: " + new Date() + " : ERROR : Inconsistency error.");
             System.exit(254);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("ERROR: mergesort. Internal error.");
+            System.out.println("mergesort: " + new Date() + " : ERROR : Internal error.");
             System.exit(254);
+        }
+
+        int intervals = numberOfSplittingIntervals;
+        int chunks = Utils.getMaxNumOfMergingChunks();
+        int numberOfMerges = 0;
+        if (intervals > 1) {
+            int nextRound = intervals;
+            do {
+                int rounds = (nextRound / chunks);
+                numberOfMerges += rounds;
+                int mod = nextRound % chunks;
+                nextRound = rounds + mod;
+            } while (nextRound >= chunks);
+            if (nextRound > 1) numberOfMerges++;
         }
 
         Queue<File> sortedChunksQueue = Utils.getSortedChunksQueue();
@@ -419,13 +395,12 @@ public class MergeSort {
         if (Utils.isVerbose())
             System.out.println("mergesort: " + new Date() + " : result file: "
                     + mergedFile);
-        if (Utils.numberOfSplittingIntervals.get() != splitter
-                .getNumberOfSplittedChunks()
-                || Utils.numberOfSplittingIntervals.get() != sorter
-                        .getNumberOfSortedChunks()
+        if (numberOfSplittingIntervals != splitterSorter
+                .getNumberOfSortedChunks()
                 || Utils.numberOfChunksForMerging.get() != 1
-                || sortedChunksQueue.size() != 0 || mergedFile == null) {
-            System.out.println("ERROR: mergesort. Severe internal error.");
+                || sortedChunksQueue.size() != 0 || mergedFile == null
+                || numberOfMerges != Merger.getMergeNumber()) {
+            System.out.println("mergesort: " + new Date() + " : ERROR : Severe internal error.");
             System.exit(255);
         }
 

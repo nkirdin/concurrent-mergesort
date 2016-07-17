@@ -113,7 +113,6 @@ public class LimitedBufferedFilterInputStreamTest {
         try (FileInputStream inputStream = new FileInputStream(testFile);
                 LimitedBufferedFilterInputStream lfis = new LimitedBufferedFilterInputStream(
                         inputStream);
-
                 BufferedReader br = new BufferedReader(
                         new FileReader(testFile))) {
             String s;

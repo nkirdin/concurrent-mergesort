@@ -12,17 +12,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * @author Nikolay Kirdin 2016-07-16
- * @version 0.2.2
+ * @author Nikolay Kirdin 2016-07-17
+ * @version 0.3
  */
 public final class Utils {
 
-    public static final String VERSION = "0.2.2";
+    public static final String VERSION = "0.3.0";
 
     /*
      * Key for output additional information while working.
      */
     private static boolean verbose = false;
+    
+    /*
+     * Semaphore for indicating that set of chunks for merging ready.
+     */
+    private static final Semaphore setOfChunksReadySemaphore = new Semaphore(0);
 
     /*
      * Queue with tuples which contain start and end positions of chunks in
@@ -31,23 +36,12 @@ public final class Utils {
     private static final BlockingQueue<Tuple<Long, Long>> pointsForSplittingQueue = new LinkedBlockingQueue<>();
 
     /*
-     * Queue with unsorted chunks. It is produced by splitter and consumes by
-     * sorter.
-     */
-    private static final BlockingQueue<File> unsortedChunksQueue = new LinkedBlockingQueue<>();
-
-    /*
      * Queue with sorted chunks. It is produced by sorter and consumes by
      * merger. At the end of work there should be only one sorted file.
      */
     private static BlockingQueue<File> sortedChunksQueue = new PriorityBlockingQueue<>(
             11, new FileLengthComparator());
 
-    /*
-     * Indicates that file was completely splitted.
-     */
-    public static final AtomicBoolean sourceFileSplitted = new AtomicBoolean(false);
-    
     /*
      * Indicates that all chunks were sorted.
      */
@@ -64,14 +58,14 @@ public final class Utils {
      * Number of splitting intervals of source file.
      */
     public static final AtomicInteger numberOfSplittingIntervals = new AtomicInteger();
+    
+    public static final AtomicInteger setOfChunks = new AtomicInteger(0);
 
     /*
      * Number of chunks while sorting and merging.
      */
     public static final AtomicLong numberOfChunksForMerging = new AtomicLong(0);
-    
-    private static final Object mergerMonitor = new Object();
-    
+        
     /*
      * Source file.
      */
@@ -90,8 +84,6 @@ public final class Utils {
     private static int maxNumOfMergingChunks = 20;
 
     private static int maxSplitterThreads = 5;
-
-    private static int maxSorterThreads = 5;
 
     private static int maxMergerThreads = 1;
 
@@ -113,27 +105,12 @@ public final class Utils {
         Utils.maxSplitterThreads = maxSplitterThreads;
     }
 
-    public static int getMaxSorterThreads() {
-        return maxSorterThreads;
-    }
-
-    public static void setMaxSorterThreads(int maxSorterThreads) {
-        Utils.maxSorterThreads = maxSorterThreads;
-    }
-
     public static int getMaxNumOfMergingChunks() {
         return maxNumOfMergingChunks;
     }
 
     public static void setMaxNumOfMergingChunks(int maxNumOfMergingChunks) {
         Utils.maxNumOfMergingChunks = maxNumOfMergingChunks;
-    }
-
-    /*
-     * Queue of unsorted chunks (produced by splitter).
-     */
-    public static BlockingQueue<File> getUnsortedChunksQueue() {
-        return unsortedChunksQueue;
     }
 
     /*
@@ -193,10 +170,6 @@ public final class Utils {
         Utils.verbose = verbose;
     }
     
-    public static Object getMergerMonitor() {
-        return mergerMonitor;
-    }
-
     public static void checkSemaphoreAndHelth(Semaphore semaphore,
             Set<Thread> threadSet, String name)
             throws InternalInconsistencyException {
@@ -217,6 +190,19 @@ public final class Utils {
                                         + " Internal error.");
                     }
                 }
+            }
+        }
+    }
+
+    public static Semaphore getSetofchunksreadysemaphore() {
+        return setOfChunksReadySemaphore;
+    }
+    
+    public static void updateSetOfChunksSemaphore() {
+        synchronized(setOfChunks) {
+            setOfChunks.getAndIncrement();
+            if (setOfChunks.compareAndSet(Utils.getMaxNumOfMergingChunks(), 0)) {
+                setOfChunksReadySemaphore.release();
             }
         }
     }

@@ -18,8 +18,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @author Nikolay Kirdin 2016-07-16
- * @version 0.2.2
+ * @author Nikolay Kirdin 2016-07-17
+ * @version 0.3
  */
 public class IntegrationTest {
 
@@ -32,10 +32,13 @@ public class IntegrationTest {
     public void test() throws Exception {
         Utils.setVerbose(true);
         long startTime = System.currentTimeMillis();
-        Utils.setChunkFileLength(50 * 1024 * 1024);
-        Utils.setMaxNumberOfConcurrentThreads(10);
+        Utils.setChunkFileLength(4 * 1024);
+        Utils.setMaxNumberOfConcurrentThreads(5);
 //        String testPath = ClassLoader
 //                .getSystemResource("IntegrationTest_500M.txt").getPath();
+
+        // String testPath = ClassLoader
+        // .getSystemResource("IntegrationTest_1M.txt").getPath();
 
          String testPath = ClassLoader
          .getSystemResource("SorterTest_100K.txt").getPath();
@@ -44,12 +47,15 @@ public class IntegrationTest {
 
         Utils.setSourceFile(testFile);
 
-        Splitter splitter = new Splitter();
+        SplitterSorter splitterSorter = new SplitterSorter();
 
-        int numberOfSplittingIntervals = Splitter.makePointsForSplitting(
+        int numberOfSplittingIntervals = SplitterSorter.makePointsForSplitting(
                 testFile, Utils.getMaxChunkFileLength(),
                 Utils.getPointsForSplittingQueue());
         Utils.numberOfSplittingIntervals.set(numberOfSplittingIntervals);
+
+        System.out.println(Utils.getPointsForSplittingQueue());
+        System.out.println("Splitting intervals: " + Utils.getPointsForSplittingQueue().size());
 
         Utils.setSortedChunksQueue(new PriorityBlockingQueue<File>(
                 numberOfSplittingIntervals, new FileLengthComparator()));
@@ -65,21 +71,14 @@ public class IntegrationTest {
         // executorService.allowCoreThreadTimeOut(true);
 
         int maxSplitterThreads = 10;
-        int maxSorterThreads = 5;
-        int maxMergerThreads = 5;
-        Utils.setMaxNumOfMergingChunks(12);
+        int maxMergerThreads = 2;
+        Utils.setMaxNumOfMergingChunks(20);
 
         Utils.setMaxSplitterThreads(maxSplitterThreads); // -p
         Utils.setMaxMergerThreads(maxMergerThreads); // -r
-        Utils.setMaxSorterThreads(maxSorterThreads); // -s
 
         for (int i = 0; i < maxSplitterThreads; i++) {
-            executorService.execute(splitter);
-        }
-
-        Sorter sorter = new Sorter();
-        for (int i = 0; i < maxSorterThreads; i++) {
-            executorService.execute(sorter);
+            executorService.execute(splitterSorter);
         }
 
         Merger merger = new Merger();
@@ -88,19 +87,13 @@ public class IntegrationTest {
         }
 
         try {
-            Utils.checkSemaphoreAndHelth(splitter.getFileSplittedSemaphore(),
-                    splitter.getThreadSet(), "Splitting");
+            Utils.checkSemaphoreAndHelth(
+                    splitterSorter.getAllChanksSortedSemaphore(),
+                    splitterSorter.getThreadSet(), "Splitting");
 
             if (Utils.isVerbose())
                 System.out.println("mergesort: " + new Date()
-                        + " : Ack end of splitting file");
-
-            Utils.checkSemaphoreAndHelth(sorter.getAllChanksSortedSemaphore(),
-                    sorter.getThreadSet(), "Sorting");
-
-            if (Utils.isVerbose())
-                System.out.println("mergesort: " + new Date()
-                        + " : Ack end of sorting file");
+                        + " : Ack end of splitting and sorting file");
 
             Utils.checkSemaphoreAndHelth(merger.getAllChanksMergedSemaphore(),
                     merger.getThreadSet(), "Merging");
@@ -121,40 +114,37 @@ public class IntegrationTest {
         File mergedFile = sortedChunksQueue.poll(1, TimeUnit.SECONDS);
 
         assertEquals(Utils.numberOfSplittingIntervals.get(),
-                splitter.getNumberOfSplittedChunks());
-        assertEquals(Utils.numberOfSplittingIntervals.get(),
-                sorter.getNumberOfSortedChunks());
+                splitterSorter.getNumberOfSortedChunks());
         assertEquals(1L, Utils.numberOfChunksForMerging.get());
         // assertEquals(0, sortedChunksQueue.size());
 
         int intervals = Utils.numberOfSplittingIntervals.get();
         int chunks = Utils.getMaxNumOfMergingChunks();
         int numberOfMerges = 0;
-        int mod = 0;
-       do {
-            int rounds = (intervals / chunks);
-            mod = intervals % chunks;
-            int nextRound = rounds + mod;
-            numberOfMerges += rounds;
-            intervals = nextRound;
-        } while (intervals > chunks);
-       if (Utils.numberOfSplittingIntervals.get() != 1 && mod != 0) numberOfMerges++;
+        if (intervals > 1) {
+            int nextRound = intervals;
+            do {
+                int rounds = (nextRound / chunks);
+                numberOfMerges += rounds;
+                int mod = nextRound % chunks;
+                nextRound = rounds + mod;
+            } while (nextRound >= chunks);
+            if (nextRound > 1) numberOfMerges++;
+        }
 
         assertEquals(numberOfMerges, Merger.getMergeNumber());
 
-        if (Utils.numberOfSplittingIntervals.get() != splitter
-                .getNumberOfSplittedChunks()
-                || Utils.numberOfSplittingIntervals.get() != sorter
-                        .getNumberOfSortedChunks()
+        if (Utils.numberOfSplittingIntervals.get() != splitterSorter
+                .getNumberOfSortedChunks()
                 || Utils.numberOfChunksForMerging.get() != 1
                 || numberOfMerges != Merger.getMergeNumber()
                 || mergedFile == null) {
             System.out.println("ERROR: mergesort. Integral internal error.");
             fail("Internal error");
         }
-        
-        System.out.println(
-                "Total Memory: " + Runtime.getRuntime().totalMemory());
+
+        System.out
+                .println("Total Memory: " + Runtime.getRuntime().totalMemory());
         System.out.println(
                 "Duration: " + (System.currentTimeMillis() - startTime));
         System.out

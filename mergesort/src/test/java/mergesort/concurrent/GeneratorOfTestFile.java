@@ -35,7 +35,7 @@ import java.util.Random;
  * 80 символам.
  * 
  * @author Nikolay Kirdin 2016-07-16
- * @version 0.2.2
+ * @version 0.3
  */
 public class GeneratorOfTestFile {
 

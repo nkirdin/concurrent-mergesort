@@ -14,7 +14,7 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
 
     private static final int MAX_STRING_ARRAY_LENGTH = 4 * 1024 * 1024;
 
-    private static final int BYTE_ARRAY_EXT_LENGTH = 512;
+    private static final int BYTE_ARRAY_EXT_LENGTH = 80;
 
     private int bufferSize;
 
@@ -88,26 +88,31 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
     }
 
     @Override
-    public synchronized int read(byte[] byteArray, int off, int len) throws IOException {
+    public synchronized int read(byte[] byteArray, int off, int len)
+            throws IOException {
         if (effectiveStreamPosition == endOfStreamPosition) {
             currentBuffIndex = buff.length;
             lastIndexInBuff = 0;
             return -1;
         }
-        
-        if (effectiveStreamPosition != ((FileInputStream) in).getChannel().position()) {
-            ((FileInputStream) in).getChannel().position(effectiveStreamPosition);
+
+        if (effectiveStreamPosition != ((FileInputStream) in).getChannel()
+                .position()) {
+            ((FileInputStream) in).getChannel()
+                    .position(effectiveStreamPosition);
             currentBuffIndex = bufferSize;
             lastIndexInBuff = currentBuffIndex;
         }
-        
+
         int proposedLength = byteArray.length;
         if (effectiveStreamPosition + byteArray.length >= endOfStreamPosition) {
-            proposedLength = (int) (endOfStreamPosition - effectiveStreamPosition);
+            proposedLength = (int) (endOfStreamPosition
+                    - effectiveStreamPosition);
         }
-        
+
         int readedBytes = super.read(byteArray, 0, proposedLength);
-        effectiveStreamPosition = ((FileInputStream) in).getChannel().position();
+        effectiveStreamPosition = ((FileInputStream) in).getChannel()
+                .position();
         return readedBytes;
     }
 
@@ -189,7 +194,7 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
      * @return String
      * @throws IOException
      * @throws StringExceedMaxmumLengthException
-     *             if readed String is greater than MAX_STRING_ARRAY_LENGTH
+     *             if read String is greater than MAX_STRING_ARRAY_LENGTH
      */
     public synchronized String readLine() throws IOException {
         byte[] byteArray = new byte[512];
@@ -198,31 +203,37 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
         int readedByte;
         while ((readedByte = read()) != -1) {
             if (readedByte == '\n') {
-                    break;
+                break;
             }
 
             if (index == byteArray.length) {
-                
+
                 if (index + BYTE_ARRAY_EXT_LENGTH > MAX_STRING_ARRAY_LENGTH) {
                     throw new StringExceedMaxmumLengthException(
                             "String exceed: " + MAX_STRING_ARRAY_LENGTH
                                     + " byte");
                 } else {
-                    byteArray = extendByteArray(byteArray, BYTE_ARRAY_EXT_LENGTH);
+                    byteArray = extendByteArray(byteArray,
+                            BYTE_ARRAY_EXT_LENGTH);
                 }
             }
 
             byteArray[index++] = (byte) readedByte;
 
         }
-        return index > 0 ? new String(byteArray, 0, index) : null;
+        return readedByte != -1 ? new String(byteArray, 0, index)
+                : index != 0 ? new String(byteArray, 0, index) : null;
     }
 
     /**
      * Extend byte Array
-     * @param byteArray - extending array
-     * @param extLength - additional length
-     * @return new byte array with new length. New array is a copy of source array.
+     * 
+     * @param byteArray
+     *            - extending array
+     * @param extLength
+     *            - additional length
+     * @return new byte array with new length. New array is a copy of source
+     *         array.
      */
     private byte[] extendByteArray(byte[] byteArray, int extLength) {
         byte[] newArray = new byte[byteArray.length + extLength];

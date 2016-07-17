@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author Nikolay Kirdin 2016-07-16
- * @version 0.2.2
+ * @author Nikolay Kirdin 2016-07-17
+ * @version 0.3
  */
 
 public class Merger implements Runnable {
@@ -124,8 +124,8 @@ public class Merger implements Runnable {
             threadSet.add(thread);
         }
 
-        Object mergerMonitor = Utils.getMergerMonitor();
-
+        Semaphore setOfChunksReadySemaphore = Utils.getSetofchunksreadysemaphore();
+        
         int maxNumOfMergingChunks = Utils.getMaxNumOfMergingChunks();
 
         BlockingQueue<File> sortedChunksQueue = Utils.getSortedChunksQueue();
@@ -152,7 +152,7 @@ public class Merger implements Runnable {
                             - mergingChunks.size() > 0
                             && mergingChunks.size() < maxNumOfMergingChunks) {
                         try {
-                            chunkOfFile = sortedChunksQueue.poll(10,
+                            chunkOfFile = sortedChunksQueue.poll(120,
                                     TimeUnit.SECONDS);
                         } catch (InterruptedException e1) {
                         }
@@ -163,11 +163,6 @@ public class Merger implements Runnable {
                             break;
                     }
                 }
-                
-                synchronized (mergerMonitor) {
-                    mergerMonitor.notifyAll();
-                }
-                
             }
 
             if (mergingChunks.size() > 1) {
@@ -187,11 +182,11 @@ public class Merger implements Runnable {
                 Utils.numberOfChunksForMerging
                         .getAndAdd(1 - mergingChunks.size());
                 numberOfMergingChunks.getAndAdd(-mergingChunks.size());
-                synchronized (mergerMonitor) {
-                    mergerMonitor.notifyAll();
-                }
+
+                Utils.updateSetOfChunksSemaphore();
+
                 if (Utils.isVerbose())
-                    System.out.println("mergesort: " + new Date() + " "
+                    System.out.println("mergesort: " + new Date() + " : "
                             + Thread.currentThread()
                             + " : Merger merged chunks: " + mergingChunks
                             + " in " + mergedChunkOfFile);
@@ -199,19 +194,17 @@ public class Merger implements Runnable {
             } else if (mergingChunks.size() == 1) {
                 sortedChunksQueue.offer(mergingChunks.get(0));
                 numberOfMergingChunks.getAndDecrement();
-                synchronized (mergerMonitor) {
-                    mergerMonitor.notifyAll();
-                }
+                
+                Utils.updateSetOfChunksSemaphore();
+
                 if (Utils.isVerbose())
                     System.out.println("mergesort: " + new Date()
                             + " : Merger return chunk: " + mergingChunks.get(0)
                             + " in mergingChunks");
             } else {
-                synchronized (mergerMonitor) {
-                    try {
-                        mergerMonitor.wait(120000);
-                    } catch (InterruptedException e) {
-                    }
+                try {
+                    setOfChunksReadySemaphore.tryAcquire(120, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
                 }
             }
         }
