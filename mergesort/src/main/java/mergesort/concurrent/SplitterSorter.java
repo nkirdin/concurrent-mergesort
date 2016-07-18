@@ -131,13 +131,13 @@ public class SplitterSorter implements Runnable {
                         + " requested(Byte): " + +requestedMemory);
             }
             if (requestedMemory * 6 > freeMemory) {
-                if (Utils.isVerbose()) {
-                    System.out.println("mergesort: " + new Date() + " : "
-                            + thread + " : SplitterSorter stop execution");
-                }
-
                 synchronized (threadSet) {
                     if (threadSet.size() > 1) {
+                        if (Utils.isVerbose()) {
+                            System.out.println("mergesort: " + new Date()
+                                    + " : " + thread
+                                    + " : SplitterSorter stop execution");
+                        }
                         threadSet.remove(thread);
                         return;
                     }

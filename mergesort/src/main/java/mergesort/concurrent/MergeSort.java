@@ -188,7 +188,7 @@ public class MergeSort {
 
             default:
                 System.out.println("ERROR: Unknown key: " + args[k - 1]);
-                resultOfCommadLineParsing |= 0x800;
+                resultOfCommadLineParsing |= 0x2000;
             }
         }
 
@@ -375,11 +375,10 @@ public class MergeSort {
             System.exit(254);
         }
 
-        int intervals = numberOfSplittingIntervals;
         int chunks = Utils.getMaxNumOfMergingChunks();
         int numberOfMerges = 0;
-        if (intervals > 1) {
-            int nextRound = intervals;
+        if (numberOfSplittingIntervals > 1) {
+            int nextRound = numberOfSplittingIntervals;
             do {
                 int rounds = (nextRound / chunks);
                 numberOfMerges += rounds;

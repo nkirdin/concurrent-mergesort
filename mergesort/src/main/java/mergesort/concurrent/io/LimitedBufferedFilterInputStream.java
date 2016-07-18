@@ -20,8 +20,6 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
 
     private byte[] buff;
 
-    private int readedBytesFromStream = 0;
-
     private long effectiveStreamPosition = 0;
 
     private int currentBuffIndex;
@@ -67,17 +65,16 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
         }
 
         if (currentBuffIndex == lastIndexInBuff) {
-            int readedBytes = super.read(buff, 0, buff.length);
-            if (readedBytes == -1) {
+            int readBytes = super.read(buff, 0, buff.length);
+            if (readBytes == -1) {
                 currentBuffIndex = buff.length;
                 lastIndexInBuff = 0;
                 return -1;
             }
             currentBuffIndex = 0;
-            lastIndexInBuff = readedBytes;
+            lastIndexInBuff = readBytes;
 
         }
-        readedBytesFromStream++;
         effectiveStreamPosition++;
         return buff[currentBuffIndex++];
     }
@@ -110,10 +107,10 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
                     - effectiveStreamPosition);
         }
 
-        int readedBytes = super.read(byteArray, 0, proposedLength);
+        int readBytes = super.read(byteArray, 0, proposedLength);
         effectiveStreamPosition = ((FileInputStream) in).getChannel()
                 .position();
-        return readedBytes;
+        return readBytes;
     }
 
     @Override
@@ -181,10 +178,6 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
         effectiveStreamPosition = currentPosition;
     }
 
-    public synchronized int getReadedBytesFromStream() {
-        return readedBytesFromStream;
-    }
-
     public synchronized long getEffectiveStreamPosition() {
         return effectiveStreamPosition;
     }
@@ -200,9 +193,9 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
         byte[] byteArray = new byte[512];
         int index = 0;
 
-        int readedByte;
-        while ((readedByte = read()) != -1) {
-            if (readedByte == '\n') {
+        int readByte;
+        while ((readByte = read()) != -1) {
+            if (readByte == '\n') {
                 break;
             }
 
@@ -218,10 +211,10 @@ public class LimitedBufferedFilterInputStream extends FilterInputStream {
                 }
             }
 
-            byteArray[index++] = (byte) readedByte;
+            byteArray[index++] = (byte) readByte;
 
         }
-        return readedByte != -1 ? new String(byteArray, 0, index)
+        return readByte != -1 ? new String(byteArray, 0, index)
                 : index != 0 ? new String(byteArray, 0, index) : null;
     }
 
